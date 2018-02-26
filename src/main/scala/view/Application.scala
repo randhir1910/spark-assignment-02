@@ -54,14 +54,7 @@ object Application extends App {
 
   val record = yearlyRecord union  monthlyRecord union  dailyRecord
 
-  record.repartition(1);
-
-  record.saveAsTextFile("/home/knoldus/Desktop/result.txt");
-
-  println("\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n")
-  println(s"${yearlyRecord.collect.toList}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
-  println(s"${monthlyRecord.collect.toList}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
-  println(s"${dailyRecord.collect.toList}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+  record.repartition(1).saveAsTextFile("/home/knoldus/Desktop/outfile")
 
   sc.stop()
 }
