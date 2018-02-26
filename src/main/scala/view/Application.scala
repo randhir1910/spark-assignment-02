@@ -40,10 +40,28 @@ object Application extends App {
 
   val customerData = sc.textFile("/home/knoldus/Downloads/spark-assignment-02/files/customer").map(x => x.split("#"))
   val salesData = sc.textFile("/home/knoldus/Downloads/spark-assignment-02/files/sales").map(x => x.split("#"))
-  val customer_record = customerData.map(x => customer(x(0).toInt, x(1), x(2), x(3), x(4), x(5).toInt)).toDF()
-  val sales_record = salesData.map(x => sales(Time.getYear(x(0).toInt), Time.getMonth(x(0).toInt), Time.getDay(x(0).toInt), x(1).toInt, x(2).toDouble)).toDF()
+  val customer_record = customerData.map(x => (x(0), customer(x(0).toInt, x(1), x(2), x(3), x(4), x(5).toInt)))
+  val sales_record = salesData.map(x => (x(1), sales(Time.getYear(x(0).toInt), Time.getMonth(x(0).toInt), Time.getDay(x(0).toInt), x(1).toInt, x(2).toDouble)))
+  val innerJoin = customer_record join sales_record
+  val yearlyRecord = innerJoin.map(x => ((x._2._1.state, x._2._2.year), x._2._2.price))
+    .reduceByKey(_ + _).map(y => s"${y._1._1}#${y._1._2}###${y._2}")
 
-  val innerJoin = sales_record.join(customer_record, sales_record("customer_id") === customer_record("customer_id"), "inner")
-  innerJoin.select("state", "year", "price").show
+  val monthlyRecord = innerJoin.map(x => ((x._2._1.state, x._2._2.year, x._2._2.month), x._2._2.price))
+    .reduceByKey(_ + _).map(y => s"${y._1._1}#${y._1._2}#${y._1._3}##${y._2}")
+
+  val dailyRecord = innerJoin.map(x => ((x._2._1.state, x._2._2.year, x._2._2.month, x._2._2.day), x._2._2.price))
+    .reduceByKey(_ + _).map(y => s"${y._1._1}#${y._1._2}#${y._1._3}#${y._1._4}#${y._2}")
+
+  val record = yearlyRecord union  monthlyRecord union  dailyRecord
+
+  record.repartition(1);
+
+  record.saveAsTextFile("/home/knoldus/Desktop/result.txt");
+
+  println("\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n\\n")
+  println(s"${yearlyRecord.collect.toList}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+  println(s"${monthlyRecord.collect.toList}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+  println(s"${dailyRecord.collect.toList}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+
   sc.stop()
 }
